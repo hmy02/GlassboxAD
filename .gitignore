@@ -1,0 +1,9 @@
+__pycache__
+*.egg-info
+TSB-AD/.idea/
+.idea/
+build
+run_scripts
+Datasets/TSB-AD-Datasets
+TSB-AD/TSB_AD/models/NormA.py
+TSB-AD/TSB_AD/models/Series2Graph.py

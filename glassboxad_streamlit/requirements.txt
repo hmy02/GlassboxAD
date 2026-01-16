@@ -1,0 +1,8 @@
+streamlit>=1.32
+numpy
+pandas
+plotly
+scikit-learn
+scipy
+scikit-posthocs
+matplotlib

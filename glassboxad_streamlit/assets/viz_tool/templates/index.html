@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HYDRA 3D Visualization</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-light: #818cf8;
+            --primary-dark: #4f46e5;
+            --secondary: #64748b;
+            --background: #f8fafc;
+            --card-bg: rgba(255, 255, 255, 0.9);
+            --sidebar-bg: rgba(255, 255, 255, 0.8);
+            --text-main: #1e293b;
+            --text-dim: #64748b;
+            --border: #e2e8f0;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: var(--background);
+            color: var(--text-main);
+        }
+
+        #container {
+            display: none;
+            flex-direction: row;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* Glassmorphism utility */
+        .glass {
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        /* Landing Page */
+        #landing-page {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: radial-gradient(circle at top right, #e0e7ff, #f8fafc);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .landing-card {
+            background: white;
+            padding: 48px;
+            border-radius: 24px;
+            box-shadow: var(--shadow-lg);
+            text-align: center;
+            max-width: 550px;
+            width: 90%;
+            border: 1px solid var(--border);
+        }
+
+        .landing-card h1 {
+            margin-top: 0;
+            font-weight: 800;
+            font-size: 2.5rem;
+            letter-spacing: -0.025em;
+            background: linear-gradient(to bottom right, var(--primary), var(--primary-dark));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+
+        .landing-card p {
+            color: var(--text-dim);
+            font-size: 1.1rem;
+            margin-bottom: 32px;
+        }
+
+        .choice-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-top: 24px;
+        }
+
+        .settings-box {
+            margin-bottom: 24px;
+            text-align: left;
+            background: #f1f5f9;
+            padding: 20px;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+        }
+
+        .settings-label {
+            display: block;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: var(--primary-dark);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .btn {
+            padding: 14px 28px;
+            font-size: 15px;
+            font-weight: 600;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 4px 14px 0 rgba(99, 102, 241, 0.39);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: var(--text-main);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--background);
+            border-color: var(--secondary);
+        }
+
+        #loading-overlay {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            margin-top: 24px;
+        }
+
+        .spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid #e2e8f0;
+            border-top: 3px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        #hierarchy-container {
+            width: 30%;
+            height: 100%;
+            position: relative;
+            background: #fff;
+            border-right: 1px solid var(--border);
+        }
+
+        #hierarchy-chart {
+            width: 100%;
+            height: 100%;
+        }
+
+        #details-container {
+            width: 70%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            background: var(--background);
+            padding: 20px;
+            gap: 20px;
+            box-sizing: border-box;
+        }
+
+        .modern-card {
+            background: white;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #details-top {
+            display: flex;
+            flex-direction: row;
+            height: 40%;
+            gap: 20px;
+        }
+
+        #histogram-container,
+        #subsequence-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #fbfcfd;
+        }
+
+        #histogram-chart,
+        #subsequence-chart {
+            flex: 1;
+            width: 100%;
+        }
+
+        #details-bottom {
+            height: 60%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #ts-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #ts-chart,
+        #score-chart {
+            flex: 1;
+            width: 100%;
+        }
+
+        /* Sidebar Menu */
+        #sidebar-menu {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            bottom: 20px;
+            width: 280px;
+            border-radius: 20px;
+            z-index: 100;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateX(calc(-100% - 40px));
+            display: flex;
+            flex-direction: column;
+            padding: 24px;
+            box-sizing: border-box;
+            box-shadow: var(--shadow-lg);
+        }
+
+        #sidebar-menu.active {
+            transform: translateX(0);
+        }
+
+        #sidebar-toggle {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 101;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            width: 44px;
+            height: 44px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: var(--shadow);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        #sidebar-menu.active~#sidebar-toggle {
+            left: 310px;
+            background: var(--secondary);
+        }
+
+        .sidebar-header {
+            margin-bottom: 24px;
+        }
+
+        .sidebar-header h2 {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(to bottom right, var(--primary), var(--primary-dark));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .sidebar-section {
+            margin-bottom: 24px;
+        }
+
+        .sidebar-section h4 {
+            margin: 0 0 12px 0;
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-weight: 700;
+        }
+
+        .dataset-badge {
+            background: var(--background);
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-main);
+            word-break: break-all;
+        }
+
+        .instruction-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.85rem;
+            color: var(--text-main);
+            margin-bottom: 8px;
+        }
+
+        .instruction-key {
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-weight: 600;
+            font-size: 0.75rem;
+            border: 1px solid var(--border);
+        }
+    </style>
+</head>
+
+<body>
+    <div id="landing-page">
+        <div class="landing-card">
+            <h1>HYDRA-AD</h1>
+            <p>Hierarchical Representations for Anomaly Detection</p>
+
+            <div id="choice-container" class="choice-buttons">
+                <div class="settings-box">
+                    <label class="settings-label">Subsequence Settings</label>
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                        <span style="font-size: 14px; font-weight: 500; color: var(--text-dim);">Window Length:</span>
+                        <input type="number" id="window-length-input" value="30" min="10" max="500"
+                            style="width: 64px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 14px;">
+                    </div>
+                    <label
+                        style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px; color: var(--text-main);">
+                        <input type="checkbox" id="auto-window-checkbox"
+                            style="width: 16px; height: 16px; accent-color: var(--primary);">
+                        Auto-detect length
+                    </label>
+                </div>
+
+                <button class="btn btn-primary" onclick="generateRandom()">
+                    Generate Random Series
+                </button>
+                <div style="margin: 8px 0; color: var(--text-dim); font-size: 0.9rem;">— OR —</div>
+                <label class="btn btn-secondary">
+                    Upload CSV File
+                    <input type="file" id="csv-upload" accept=".csv" style="display: none;"
+                        onchange="handleFileUpload(this)">
+                </label>
+            </div>
+
+            <div id="loading-overlay">
+                <div class="spinner"></div>
+                <p>Running HYDRA Compression...</p>
+                <p style="font-size: 12px; color: #666;">Large datasets (up to 10k points) may take a few seconds.</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="container">
+        <!-- 30% Width: Hierarchy -->
+        <div id="hierarchy-container">
+            <div id="hierarchy-chart"></div>
+
+            <div id="sidebar-menu" class="glass">
+                <div class="sidebar-header">
+                    <h2>HYDRA-AD</h2>
+                </div>
+
+                <div class="sidebar-section">
+                    <h4>Current Data</h4>
+                    <div class="dataset-badge">
+                        <span id="data-name-display">Loading...</span>
+                    </div>
+                </div>
+
+                <div class="sidebar-section modern-card" style="padding: 16px; background: white;">
+                    <h4 style="margin-top: 0;">Re-run with Settings</h4>
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                        <span style="font-size: 13px; font-weight: 500;">Length:</span>
+                        <input type="number" id="sidebar-win-length" value="30" min="10" max="500"
+                            style="width: 50px; padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px;">
+                    </div>
+                    <label
+                        style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; margin-bottom: 16px;">
+                        <input type="checkbox" id="sidebar-auto-window" style="accent-color: var(--primary);">
+                        Auto-detect
+                    </label>
+                    <button class="btn btn-primary" style="width: 100%; padding: 10px; font-size: 13px;"
+                        onclick="generateRandom(true)">Re-run Random</button>
+                    <button class="btn btn-secondary"
+                        style="width: 100%; margin-top: 12px; padding: 10px; font-size: 13px;"
+                        onclick="resetToLanding()">Back to Choice</button>
+                </div>
+
+                <div class="sidebar-section">
+                    <h4>Instructions</h4>
+                    <div class="instructions">
+                        <div class="instruction-item"><span class="instruction-key">LMB</span> <span>Rotate View</span>
+                        </div>
+                        <div class="instruction-item"><span class="instruction-key">Scroll</span> <span>Zoom
+                                In/Out</span></div>
+                        <div class="instruction-item"><span class="instruction-key">RMB</span> <span>Pan Camera</span>
+                        </div>
+                        <div class="instruction-item"><span class="instruction-key">Click</span> <span>Inspect
+                                Node</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <button id="sidebar-toggle" onclick="toggleSidebar()" title="Toggle Menu">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="3" y1="12" x2="21" y2="12"></line>
+                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                    <line x1="3" y1="18" x2="21" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+
+        <!-- 70% Width: Data Details -->
+        <div id="details-container">
+            <!-- Top Row: Histogram and Selected Subsequence -->
+            <div id="details-top">
+                <div id="histogram-container" class="modern-card">
+                    <div class="card-header">NN Distance per Layer</div>
+                    <div id="histogram-chart"></div>
+                </div>
+                <div id="subsequence-container" class="modern-card">
+                    <div class="card-header">
+                        Selected Subsequence
+                        <button id="reset-zoom-btn" class="btn btn-secondary"
+                            style="padding: 2px 8px; font-size: 10px; display: none; margin: 0; border-radius: 6px;"
+                            onclick="resetZoom()">Reset Zoom</button>
+                    </div>
+                    <div id="subsequence-chart"></div>
+                </div>
+            </div>
+
+            <!-- Bottom Row: Time Series and Anomaly Score -->
+            <div id="details-bottom">
+                <div id="ts-container" class="modern-card">
+                    <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+                        <span>Synchronized View (Brush on Time Series to Zoom)</span>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span style="font-size:12px; color:#64748b; font-weight:600;">Score Layer</span>
+                            <select id="score-layer-select"
+                                    style="padding:4px 8px; border:1px solid #e2e8f0; border-radius:8px; font-size:12px;">
+                            </select>
+                        </div>
+                    </div>
+                    <div id="ts-chart"></div>
+                    <div id="score-chart" style="border-top: 1px solid var(--border);"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Import map for Three.js modules -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+    <script type="module" src="/static/script_3d.js"></script>
+    <script>
+        // Global functions for the landing page to avoid module scope issues
+        function showLoading() {
+            document.getElementById('choice-container').style.display = 'none';
+            document.getElementById('loading-overlay').style.display = 'flex';
+        }
+
+        function hideLoading() {
+            document.getElementById('choice-container').style.display = 'flex';
+            document.getElementById('loading-overlay').style.display = 'none';
+        }
+
+        async function generateRandom(fromSidebar = false) {
+            showLoading();
+            let winLen = document.getElementById(fromSidebar ? 'sidebar-win-length' : 'window-length-input').value;
+            let autoWin = document.getElementById(fromSidebar ? 'sidebar-auto-window' : 'auto-window-checkbox').checked;
+
+            try {
+                const response = await fetch(`/api/generate_random?window_size=${winLen}&auto_window=${autoWin}`);
+                await response.json();
+                await startApp();
+            } catch (e) {
+                console.error("Error generating random data:", e);
+                hideLoading();
+                alert("Failed to generate data.");
+            }
+        }
+
+        async function handleFileUpload(input) {
+            if (!input.files || input.files.length === 0) return;
+
+            showLoading();
+            let winLen = document.getElementById('window-length-input').value;
+            let autoWin = document.getElementById('auto-window-checkbox').checked;
+
+            const formData = new FormData();
+            formData.append('file', input.files[0]);
+
+            try {
+                const response = await fetch(`/api/upload?window_size=${winLen}&auto_window=${autoWin}`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const res = await response.json();
+                if (res.status === "success") {
+                    await startApp();
+                } else {
+                    alert("Error: " + (res.error || "Unknown error"));
+                    hideLoading();
+                }
+            } catch (e) {
+                console.error("Error uploading file:", e);
+                alert("Failed to upload file.");
+                hideLoading();
+            }
+        }
+
+        async function startApp() {
+            // Signal the 3D module to start or reload
+            if (window.hydraStartApp) {
+                await window.hydraStartApp();
+            } else {
+                // If the module hasn't loaded yet, wait a bit
+                console.log("Waiting for 3D module...");
+                setTimeout(startApp, 500);
+            }
+        }
+
+        function resetToLanding() {
+            document.getElementById('container').style.display = 'none';
+            document.getElementById('landing-page').style.display = 'flex';
+            document.getElementById('sidebar-menu').classList.remove('active'); // Close sidebar on reset
+            hideLoading();
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar-menu');
+            sidebar.classList.toggle('active');
+
+            // Update toggle button icon/state if needed
+            const button = document.getElementById('sidebar-toggle');
+            if (sidebar.classList.contains('active')) {
+                button.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
+            } else {
+                button.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>';
+            }
+        }
+    </script>
+</body>
+
+</html>
