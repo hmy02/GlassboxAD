@@ -17,7 +17,8 @@ st.set_page_config(page_title="HYDRA", layout="wide")
 
 st.title("HYDRA")
 
-DATA_DIR = Path("data/preloaded_ts")
+
+DATA_DIR = Path(__file__).resolve().parents[1] / "data" / "preloaded_ts"
 
 with st.sidebar:
     st.header("Input")
@@ -26,12 +27,12 @@ with st.sidebar:
     else:
         csvs = []
 
-    source = st.radio("Choose source", ["preloaded_ts", "upload"], horizontal=True)
+    source = st.radio("Choose source", ["TSB-AD", "upload"], horizontal=True)
 
     df = None
     data_name = None
 
-    if source == "preloaded_ts":
+    if source == "TSB-AD":
         if not csvs:
             st.warning("No CSV files found in data/preloaded_ts")
         fname = st.selectbox("CSV", csvs) if csvs else None
