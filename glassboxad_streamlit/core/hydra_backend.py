@@ -166,14 +166,14 @@ def compute_hydra_payload(
 
     for i in range(len(windows)):
         found = False
-        for k in range(indices0.shape[1]):
-            target_idx = int(indices0[i, k])
-            if abs(i - target_idx) >= win_size:
-                l0_scores.append(float(dists0[i, k]))
-                l0_nn_indices.append(target_idx)
-                edges0.append([int(i), target_idx])
-                found = True
-                break
+        # for k in range(indices0.shape[1]):
+        #     target_idx = int(indices0[i, k])
+        #     if abs(i - target_idx) >= win_size:
+        #         l0_scores.append(float(dists0[i, k]))
+        #         l0_nn_indices.append(target_idx)
+        #         edges0.append([int(i), target_idx])
+        #         found = True
+        #         break
         if not found:
             # fallback
             if indices0.shape[1] > 1:
