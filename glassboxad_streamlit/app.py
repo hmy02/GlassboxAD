@@ -32,8 +32,9 @@ This design helps users understand *where* anomalies come from (which level, whi
 
 ASSET_DIR = Path(__file__).resolve().parent / "assets"
 PIPELINE_IMG = ASSET_DIR / "HiAD_framework.png"
-
-st.image(str(PIPELINE_IMG), use_container_width=True, caption="HYDRA pipeline overview")
+left, mid, right = st.columns([2, 6, 2])
+with mid:
+    st.image(str(PIPELINE_IMG), use_container_width=True, caption="HYDRA pipeline overview")
 
 st.subheader("Benchmark")
 st.markdown(
