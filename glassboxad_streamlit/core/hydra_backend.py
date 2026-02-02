@@ -117,11 +117,16 @@ def compute_hydra_payload(
     x: np.ndarray,
     labels: Optional[np.ndarray],
     win_size: int = 30,
-    mode: str = "approx",
+    mode: str = "auto",
     truncate_limit: int = 10000,
+    random_state: Optional[int] = 42, 
 ) -> dict:
     """Compute the JSON payload consumed by the HYDRA 3D viewer."""
-
+    if mode == 'auto':
+        if len(x) > 10000:
+            mode = 'approx'
+        else:
+            mode = 'exact'
     loader, _find_length_rank = _try_import_hydra()
 
     X = np.asarray(x, dtype=float).ravel()
@@ -148,7 +153,7 @@ def compute_hydra_payload(
     windows_pca_norm = (windows_pca - pca_min) / (pca_max - pca_min + 1e-12) * 2 - 1
 
     # Run HYDRA
-    model = loader.HYDRA(win_size=win_size, mode=mode)
+    model = loader.HYDRA(win_size=win_size, mode=mode, random_state=random_state)
     ts_scores, _win_scores_raw = model.compress_and_score_multi(X)
 
     # Recompute win_scores with dead-zone handling (copied from your FastAPI impl)

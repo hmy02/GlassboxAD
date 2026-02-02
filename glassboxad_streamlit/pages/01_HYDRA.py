@@ -49,7 +49,7 @@ with st.sidebar:
     default_win = 30
     auto_win = st.checkbox("Auto window size", value=False)
     win_size = st.number_input("Window size", min_value=4, max_value=2000, value=default_win, step=1)
-    mode = st.selectbox("Mode", ["approx", "exact"], index=0)
+    mode = st.selectbox("Mode", ["auto", "approx", "exact"], index=0)
 
     st.header("VUS-PR params")
     max_buffer = st.number_input("Max buffer size (surface)", min_value=1, max_value=5000, value=200, step=1)

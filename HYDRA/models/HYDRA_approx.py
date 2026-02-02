@@ -17,12 +17,13 @@ class HYDRA:
                  # ANN related
                  ann_backend="auto",
                  hnsw_M=16, hnsw_ef_construction=100, hnsw_ef=40,
-                 ann_threads=1):
+                 ann_threads=1, random_state=42):
         self.win_size = win_size
         self.stride = stride
         self.K = K
         self.include_all_windows = include_all_windows
         self.debug = debug
+        self.rng = np.random.default_rng(random_state)
 
         # Storage
         self.ts_scores_mat = None
@@ -63,13 +64,16 @@ class HYDRA:
         return np.bincount(nearest_idx, minlength=N)
 
     @staticmethod
-    def compress_once_dir(nearest_idx, count):
+    def compress_once_dir(nearest_idx, count, rng=None):
         """
         Perform one-step directed merging:
         - If node i and j are nearest neighbors,
           assign the one with larger 'count' (or smaller index when tie) as parent.
         - Apply path compression afterwards.
         """
+        if rng is None:
+            rng = np.random.default_rng()
+
         N = len(nearest_idx)
         parent = np.arange(N, dtype=np.int64)
 
@@ -77,10 +81,15 @@ class HYDRA:
             j = nearest_idx[i]
             if i == j:
                 continue
-            if (count[j] > count[i]) or (count[j] == count[i] and j < i):
+            if count[j] > count[i]:
                 parent[i] = j
-            else:
+            elif count[j] < count[i]:
                 parent[j] = i
+            else:
+                if rng.random() < 0.5:
+                    parent[i] = j
+                else:
+                    parent[j] = i
 
         def find(a):
             while parent[a] != a:
@@ -154,7 +163,7 @@ class HYDRA:
 
             # 2) Count popularity and compress to obtain reps(L+1)
             cnt = self.compute_count(nn, len(cur_idx))
-            inv = self.compress_once_dir(nn, cnt)
+            inv = self.compress_once_dir(nn, cnt, self.rng)
             _, first_idx = np.unique(inv, return_index=True)   # representative row ids in cur_win
             next_idx = cur_idx[first_idx]                      # convert back to global indices
 
