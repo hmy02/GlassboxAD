@@ -127,12 +127,12 @@ def compute_hydra_payload(
             mode = 'approx'
         else:
             mode = 'exact'
+    loader, _find_length_rank = _try_import_hydra()
     import inspect
     print("HYDRA_loader file:", loader.__file__)
     print("HYDRA object:", loader.HYDRA)
     print("HYDRA signature:", inspect.signature(loader.HYDRA))
     print(mode)
-    loader, _find_length_rank = _try_import_hydra()
 
     X = np.asarray(x, dtype=float).ravel()
     labels = np.asarray(labels, dtype=int).ravel() if labels is not None else None
