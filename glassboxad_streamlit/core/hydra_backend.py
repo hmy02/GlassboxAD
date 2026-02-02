@@ -128,11 +128,18 @@ def compute_hydra_payload(
         else:
             mode = 'exact'
     loader, _find_length_rank = _try_import_hydra()
-    import inspect
-    print("HYDRA_loader file:", loader.__file__)
-    print("HYDRA object:", loader.HYDRA)
-    print("HYDRA signature:", inspect.signature(loader.HYDRA))
-    print(mode)
+    # --- DEBUG: show import info on the Streamlit page (not console) ---
+    try:
+        import streamlit as st
+        import inspect
+        import HYDRA
+
+        st.sidebar.markdown("### Import debug")
+        st.sidebar.write("HYDRA package:", HYDRA.__file__)
+        st.sidebar.write("HYDRA_loader:", loader.__file__)
+        st.sidebar.code(str(inspect.signature(loader.HYDRA)), language="text")
+    except Exception:
+        pass
 
     X = np.asarray(x, dtype=float).ravel()
     labels = np.asarray(labels, dtype=int).ravel() if labels is not None else None
