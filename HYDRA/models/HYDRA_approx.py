@@ -100,7 +100,11 @@ class HYDRA:
         for i in range(N):
             parent[i] = find(i)
 
-        return HYDRA.relabel_zero_based(parent)
+        roots = np.flatnonzero(parent == np.arange(N))  
+        labels = HYDRA.relabel_zero_based(parent)       
+
+        return labels, roots
+        # return HYDRA.relabel_zero_based(parent)
 
     @staticmethod
     def reverse_windowing_min(score_win, win_size, stride):
@@ -163,12 +167,18 @@ class HYDRA:
 
             # 2) Count popularity and compress to obtain reps(L+1)
             cnt = self.compute_count(nn, len(cur_idx))
-            inv = self.compress_once_dir(nn, cnt, self.rng)
-            _, first_idx = np.unique(inv, return_index=True)   # representative row ids in cur_win
-            next_idx = cur_idx[first_idx]                      # convert back to global indices
+            # inv = self.compress_once_dir(nn, cnt, self.rng)
+            labels, roots = self.compress_once_dir(nn, cnt, self.rng)
 
-            parent_maps.append(inv)
+            parent_maps.append(labels)        
+            next_idx = cur_idx[roots]        
             rep_levels_idx.append(next_idx)
+            
+            # _, first_idx = np.unique(inv, return_index=True)   # representative row ids in cur_win
+            # next_idx = cur_idx[first_idx]                      # convert back to global indices
+
+            # parent_maps.append(inv)
+            # rep_levels_idx.append(next_idx)
 
             # 3) Save the scoring index for level L (database = reps(L) = cur_win)
             rep_ann_levels.append(ann_cur)

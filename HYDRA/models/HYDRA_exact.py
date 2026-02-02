@@ -129,7 +129,11 @@ class HYDRA:
         for i in range(N):
             parent[i] = find(i)
 
-        return HYDRA.relabel_zero_based(parent)
+        roots = np.flatnonzero(parent == np.arange(N))  
+        labels = HYDRA.relabel_zero_based(parent)       
+
+        return labels, roots
+        # return HYDRA.relabel_zero_based(parent)
 
     @staticmethod
     def reverse_windowing_min(score_win, win_size, stride):
@@ -173,19 +177,29 @@ class HYDRA:
 
             nn = self.find_nearest_indices(cur_win)
             cnt = self.compute_count(nn, len(cur_idx))
-            inv = self.compress_once_dir(nn, cnt, self.rng)
-            _, first_idx = np.unique(inv, return_index=True)
+            # inv = self.compress_once_dir(nn, cnt, self.rng)
+            labels, roots = self.compress_once_dir(nn, cnt, self.rng)
 
-            parent_maps.append(inv)
-            next_idx = cur_idx[first_idx]
+            parent_maps.append(labels)        
+            next_idx = cur_idx[roots]        
             rep_levels_idx.append(next_idx)
 
             levels.append(next_idx)
             cur_idx = next_idx
             cur_win = windows[cur_idx]
+            # _, first_idx = np.unique(inv, return_index=True)
+
+            # parent_maps.append(inv)
+            # next_idx = cur_idx[first_idx]
+            # rep_levels_idx.append(next_idx)
+
+            # levels.append(next_idx)
+            # cur_idx = next_idx
+            # cur_win = windows[cur_idx]
             level_id += 1
         self.parent_maps = parent_maps
         self.rep_levels_idx = rep_levels_idx
+
         return rep_levels_idx, parent_maps
 
     def build_tree(self, parent_maps, rep_levels_idx):

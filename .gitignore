@@ -7,3 +7,5 @@ run_scripts
 Datasets/TSB-AD-Datasets
 TSB-AD/TSB_AD/models/NormA.py
 TSB-AD/TSB_AD/models/Series2Graph.py
+.ipynb_checkpoints/
+HYDRA/.ipynb_checkpoints/
